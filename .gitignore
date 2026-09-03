@@ -1,0 +1,55 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Env / secrets — never commit real keys
+.env
+.env.*
+!.env.example
+
+# Runtime storage — large generated data, not source
+backend/storage/
+backend/data/index/
+backend/data/uploads/
+*.sqlite3
+*.db
+chroma_db/
+*.faiss
+
+# Eval working storage (generated index, not source)
+backend/eval/.eval_storage/
+
+# Scratch / temp files
+backend/test_citation.py
+
+# Node / frontend build artifacts
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+npm-debug.log*
+
+# Frontend env (has VITE_API_BASE_URL pointing to localhost)
+frontend/.env
+
+# Unused assets
+frontend/src/assets/vite.svg
+frontend/src/assets/hero.png
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+.claude/
+
+# Logs
+*.log

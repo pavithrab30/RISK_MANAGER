@@ -1,0 +1,264 @@
+# Gold evaluation set for the DocIntel corpus (see ../../corpus/README.md).
+#
+# Every `expected[].pages` entry was verified by hand against the actual
+# extracted page text (see ADR.md "Evaluation" for the verification method)
+# - not guessed from paper structure. Where a fact legitimately appears on
+# more than one page (e.g. a definition repeated in an overview and a
+# detailed section), all valid pages are listed; a hit on any one counts.
+#
+# categories:
+#   single_page     - answerable from one page, one document (sanity baseline)
+#   cross_page      - genuinely needs facts from >=2 pages of the same document
+#   table_aware     - answer requires reading a specific extracted table
+#   cross_document  - needs facts from >=2 different documents
+#   ocr_scanned     - answer must come from the synthesized scanned/OCR document
+#   refusal         - the corpus does NOT support an answer; correct behavior is to refuse
+
+- id: attn_bleu_ende_single
+  question: "What BLEU score does the Transformer (big) model achieve on the WMT 2014 English-to-German translation task?"
+  category: single_page
+  expected:
+    - document: attention_is_all_you_need.pdf
+      pages: [8]
+  answer_keywords: ["28.4"]
+  should_refuse: false
+
+- id: attn_architecture_single
+  question: "What does the Transformer architecture rely on instead of recurrence or convolution?"
+  category: single_page
+  expected:
+    - document: attention_is_all_you_need.pdf
+      pages: [2, 3]
+  answer_keywords: ["attention"]
+  should_refuse: false
+
+- id: attn_heads_single
+  question: "How many parallel attention heads does the Transformer use, and what are the per-head key/value dimensions?"
+  category: single_page
+  expected:
+    - document: attention_is_all_you_need.pdf
+      pages: [5]
+  answer_keywords: ["8", "64"]
+  should_refuse: false
+
+- id: attn_optimizer_single
+  question: "What optimizer did the authors use to train the Transformer, and how did the learning rate change over training?"
+  category: single_page
+  expected:
+    - document: attention_is_all_you_need.pdf
+      pages: [7]
+  answer_keywords: ["Adam", "warmup"]
+  should_refuse: false
+
+- id: attn_encoder_layers_single
+  question: "How many identical layers make up the Transformer's encoder stack?"
+  category: single_page
+  expected:
+    - document: attention_is_all_you_need.pdf
+      pages: [3]
+  answer_keywords: ["6"]
+  should_refuse: false
+
+- id: attn_abstract_vs_cost_cross_page
+  question: "According to the abstract, what BLEU score did the model achieve on English-to-German, and what does the results section say made that result notable given the training cost?"
+  category: cross_page
+  expected:
+    - document: attention_is_all_you_need.pdf
+      pages: [1, 8]
+  answer_keywords: ["28.4"]
+  should_refuse: false
+  notes: "Genuinely needs the headline number from the abstract (p1) plus the training-cost framing from the results discussion (p8) - a single top-k query tends to only surface one of the two."
+
+- id: attn_intro_vs_conclusion_cross_page
+  question: "How does the introduction motivate replacing recurrence with attention, and how does the conclusion summarize what the paper actually achieved?"
+  category: cross_page
+  expected:
+    - document: attention_is_all_you_need.pdf
+      pages: [2, 10]
+  answer_keywords: ["attention"]
+  should_refuse: false
+  notes: "Introduction (motivation) and Conclusion (outcome) are 8 pages apart; a naive top-k window over one region misses one side of this."
+
+- id: attn_table2_cost_table_aware
+  question: "According to Table 2, what is the estimated training cost in FLOPs for the Transformer (big) model on the English-to-German task?"
+  category: table_aware
+  expected:
+    - document: attention_is_all_you_need.pdf
+      pages: [8]
+  answer_keywords: ["2.3", "10^19", "10 19", "2.3 · 10"]
+  should_refuse: false
+
+- id: attn_table4_parsing_table_aware
+  question: "According to Table 4, which model/training combination achieves the highest WSJ Section 23 F1 score, and what is that score?"
+  category: table_aware
+  expected:
+    - document: attention_is_all_you_need.pdf
+      pages: [10]
+  answer_keywords: ["93.3", "Dyer"]
+  should_refuse: false
+
+- id: attn_positional_encoding_single
+  question: "Why did the authors choose sinusoidal positional encodings over learned positional embeddings?"
+  category: single_page
+  expected:
+    - document: attention_is_all_you_need.pdf
+      pages: [6]
+  answer_keywords: ["extrapolate"]
+  should_refuse: false
+
+- id: bert_full_name_single
+  question: "What does the acronym BERT stand for?"
+  category: single_page
+  expected:
+    - document: bert.pdf
+      pages: [1]
+  answer_keywords: ["Bidirectional Encoder Representations"]
+  should_refuse: false
+
+- id: bert_model_sizes_single
+  question: "How many total parameters do BERTBASE and BERTLARGE each have?"
+  category: single_page
+  expected:
+    - document: bert.pdf
+      pages: [3]
+  answer_keywords: ["110M", "340M"]
+  should_refuse: false
+
+- id: bert_table1_glue_table_aware
+  question: "According to Table 1, what GLUE score does BERTLARGE achieve on the leaderboard, and how does that compare to OpenAI GPT?"
+  category: table_aware
+  expected:
+    - document: bert.pdf
+      pages: [6]
+  answer_keywords: ["80.5", "72.8"]
+  should_refuse: false
+
+- id: bert_abstract_vs_table_cross_page
+  question: "The abstract reports a headline GLUE improvement for BERT - what is that number, and how does Table 1's per-task breakdown elsewhere in the paper support it?"
+  category: cross_page
+  expected:
+    - document: bert.pdf
+      pages: [1, 6]
+  answer_keywords: ["80.5"]
+  should_refuse: false
+  notes: "Abstract's single summary number (p1) vs the detailed per-task table (p6) five pages later."
+
+- id: bert_conclusion_single
+  question: "What does BERT's conclusion say is the main contribution of using bidirectional pre-training?"
+  category: single_page
+  expected:
+    - document: bert.pdf
+      pages: [9]
+  answer_keywords: ["bidirectional"]
+  should_refuse: false
+
+- id: nist_aal1_requirements_single
+  question: "What authentication factors does AAL1 require?"
+  category: single_page
+  expected:
+    - document: nist_digital_identity_guidelines.pdf
+      pages: [13, 16]
+  answer_keywords: ["single-factor", "multi-factor"]
+  should_refuse: false
+
+- id: nist_table_reauth_table_aware
+  question: "According to Table 4-1, what is the required reauthentication period at AAL2 versus AAL3?"
+  category: table_aware
+  expected:
+    - document: nist_digital_identity_guidelines.pdf
+      pages: [22]
+  answer_keywords: ["12 hours", "30 minutes", "15 minutes"]
+  should_refuse: false
+
+- id: nist_table_fips_table_aware
+  question: "According to Table 4-1, what FIPS 140 verification level applies to AAL3 authenticators?"
+  category: table_aware
+  expected:
+    - document: nist_digital_identity_guidelines.pdf
+      pages: [22]
+  answer_keywords: ["Level 2", "Level 3"]
+  should_refuse: false
+
+- id: nist_definition_vs_table_cross_page
+  question: "How does the guide define AAL2 versus AAL3 in terms of cryptographic proof, and how does Table 4-1 elsewhere summarize their differing reauthentication requirements?"
+  category: cross_page
+  expected:
+    - document: nist_digital_identity_guidelines.pdf
+      pages: [14, 22]
+  answer_keywords: ["cryptographic"]
+  should_refuse: false
+  notes: "Narrative AAL definition (p14) is 8 pages away from the requirements table that operationalizes it (p22)."
+
+- id: nist_aal2_crypto_single
+  question: "What cryptography requirement applies to authenticators used at AAL2?"
+  category: single_page
+  expected:
+    - document: nist_digital_identity_guidelines.pdf
+      pages: [17, 18]
+  answer_keywords: ["approved cryptography"]
+  should_refuse: false
+
+- id: cross_doc_transformer_vs_bert
+  question: "BERT's encoder is based on the original Transformer architecture - how many attention heads did the original Transformer paper use, and what pre-training objective does BERT use instead of the Transformer's original translation objective?"
+  category: cross_document
+  expected:
+    - document: attention_is_all_you_need.pdf
+      pages: [5]
+    - document: bert.pdf
+      pages: [1]
+  answer_keywords: ["8", "masked language model"]
+  should_refuse: false
+  notes: "Requires per-document attribution across two different papers in one answer - the bonus 'multi-document' case."
+
+- id: cross_doc_model_scale_vs_hardware
+  question: "How many parameters does BERTLARGE have, and how many GPUs and days did it take to train the original Transformer (big) model?"
+  category: cross_document
+  expected:
+    - document: bert.pdf
+      pages: [3]
+    - document: attention_is_all_you_need.pdf
+      pages: [7]
+  answer_keywords: ["340M", "8", "3.5 days"]
+  should_refuse: false
+
+- id: ocr_scanned_title_authors
+  question: "According to the scanned excerpt document, what is the paper's title and who is the first listed author?"
+  category: ocr_scanned
+  expected:
+    - document: scanned_attention_excerpt.pdf
+      pages: [1]
+  answer_keywords: ["Attention Is All You Need", "Vaswani"]
+  should_refuse: false
+  notes: "Only answerable if OCR correctly recovered the title-page text from the image-only PDF."
+
+- id: ocr_scanned_recurrence_claim
+  question: "According to the scanned excerpt, what claim does the paper make about recurrence and convolution in its proposed architecture?"
+  category: ocr_scanned
+  expected:
+    - document: scanned_attention_excerpt.pdf
+      pages: [2]
+  answer_keywords: ["recurrence"]
+  should_refuse: false
+
+- id: refusal_unrelated_topic
+  question: "What does the paper say about the CEO of Google's personal opinion of the Transformer architecture?"
+  category: refusal
+  expected: []
+  answer_keywords: []
+  should_refuse: true
+
+- id: refusal_imagenet
+  question: "What accuracy did the model achieve on the ImageNet image classification benchmark?"
+  category: refusal
+  expected: []
+  answer_keywords: []
+  should_refuse: true
+  notes: "None of the corpus documents evaluate on ImageNet - tests that the system doesn't substitute a plausible-sounding but ungrounded number."
+
+- id: refusal_plausible_trap
+  question: "According to the NIST report, what password rotation policy does Australia require for AAL1 government accounts?"
+  category: refusal
+  expected: []
+  answer_keywords: []
+  should_refuse: true
+  notes: "Deliberately plausible-sounding (the doc does discuss AAL1 and reauthentication) but the country/detail is fabricated - the doc is a US NIST publication with no Australia-specific content. Tests resistance to a leading/trap question."

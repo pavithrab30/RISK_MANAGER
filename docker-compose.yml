@@ -1,0 +1,30 @@
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - backend/.env
+    volumes:
+      - docintel_storage:/data/storage
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Browser-side code talks to the backend via the host machine's
+        # published port, not the internal docker network name.
+        VITE_API_BASE_URL: http://localhost:8000
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+
+volumes:
+  docintel_storage:
