@@ -3,6 +3,7 @@ __pycache__/
 *.pyc
 *.pyo
 .venv/
+.eval-venv/
 venv/
 *.egg-info/
 .pytest_cache/
@@ -53,3 +54,7 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Local demonstration artifacts
+output/
+tmp/

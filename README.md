@@ -1,150 +1,260 @@
-# DocIntel — Multimodal Document Intelligence
+# RiskRAG — AI Risk Manager for Chargeback Loss
 
-Ask questions over a collection of visually rich PDFs (multi-column layouts, figures, tables,
-scans) and get answers that draw on information spread across several pages, with every part of
-the answer linked back to the exact page and region it came from.
+RiskRAG helps merchants stop avoidable chargeback losses by finding case evidence, checking it against the selected reason code, detecting gaps and contradictions, estimating whether the evidence package is sufficient, and preparing a source-grounded draft response for merchant review.
 
-See **[ADR.md](ADR.md)** for the full design doc and the reasoning behind every non-obvious
-choice — this README is setup/run instructions.
+It addresses **one class of loss: chargebacks**. It does not score returns, originate payments, decide whether a cardholder committed fraud, or submit disputes.
 
-## Architecture in one paragraph
+## Why this fits the AI Risk Manager track
 
-![DocIntel Architecture](architecture.png)
+- **Working detector:** flags identifier, amount, date, delivery-status, refund-status, and cross-document conflicts.
+- **Working verifier:** maps a chargeback reason to its evidence requirements and identifies missing and critical evidence.
+- **Working responder:** produces a draft composed only from retrieved merchant evidence with page-level citations.
+- **Measured ML:** classifies `SUFFICIENT_EVIDENCE` versus `INSUFFICIENT_EVIDENCE`; Logistic Regression, Random Forest, and XGBoost are compared on validation data before one held-out test evaluation.
+- **Honest loss metrics:** reports precision, recall, F1, accuracy, confusion matrix, false-positive and false-negative rates, and configurable FP/FN financial cost.
+- **Defense only:** no evidence fabrication, payment-system access, fraud enablement, or automatic chargeback submission. Merchant review is always required.
 
-PDFs are parsed with [Docling](https://github.com/docling-project/docling) (layout model +
-table-structure model + OCR fallback for scans), chunked with a structure-aware parent/child
-strategy that never splits a table and keeps section context spanning pages, and indexed into
-both a dense vector store (Chroma) and a keyword index (SQLite FTS5/BM25). A question is answered
-by: optionally decomposing it into sub-questions (LLM-gated), hybrid dense+BM25 search fused with
-Reciprocal Rank Fusion, reference-graph expansion ("see Table 2" → pull in Table 2), cross-encoder
-reranking over the merged candidate pool, then grounded generation (Groq/Llama, with automatic
-fallback to Gemini if Groq's free-tier quota is hit) with per-sentence `[Sn]` citation markers and
-a two-stage groundedness gate that refuses rather than guesses. The React frontend renders the
-source PDF page and highlights the exact cited region, and any answer can be exported as a
-Markdown or PDF report with citations linked back to source pages.
+## Merchant workflow
 
-## Prerequisites
+1. Upload the PDFs belonging to a chargeback case.
+2. Select only the documents for that case.
+3. Choose the card network and reason code.
+4. Enter claim description, order ID, transaction ID, and disputed amount. Dates and claimed delivery/refund status are optional.
+5. Run the assessment.
+6. Review the evidence score, risk level, recommendation, ML result, requirements, missing documents, contradictions, cited excerpts, and draft.
+7. Open citations to verify the exact source page and region.
+8. Resolve every gap and contradiction before manually using the response in the merchant's approved dispute process.
+
+`AUTO_RESPOND` means only that a draft is ready for merchant review. RiskRAG never submits it.
+
+## System architecture
+![RiskRag Architecture!](architecture-riskrag.png)
+
+- **Evidence ingestion:** Docling extracts document layout, tables, figures, and OCR text while retaining page and bounding-box metadata.
+- **Evidence indexing:** Chroma stores dense vectors; SQLite FTS5 provides keyword search and metadata.
+- **Evidence retrieval:** query decomposition, dense and BM25 retrieval, reciprocal-rank fusion, reference expansion, and cross-encoder reranking locate case-relevant passages.
+- **Requirements engine:** `backend/data/chargeback-reason-codes.csv` maps the selected claim type to required evidence.
+- **Verifier:** case-linked passages are checked for requirement support and contradictions.
+- **Risk scoring:** an explainable 0–100 score combines coverage, critical requirements, identifier coverage, and contradiction penalties.
+- **Classifier:** the selected model predicts evidence sufficiency from verifier features.
+- **Draft responder:** usable passages are quoted with document, chunk, page, and region references. No unsupported factual text is generated.
+- **Review interface:** the React application presents the complete chargeback workflow and opens the cited PDF region.
+
+Key files:
+
+- `backend/app/api/routes_risk.py` — chargeback reason-code and analysis API.
+- `backend/app/services/risk_service.py` — evidence requirements, extraction, contradiction checks, scoring, recommendations, and grounded drafting.
+- `backend/app/services/risk_model.py` — selected-model inference.
+- `backend/eval/run_eval.py` — the single chargeback evaluation entry point.
+- `backend/ml/train.py` — reproducible synthetic-case generation, model comparison, held-out evaluation, costs, and reports.
+- `frontend/src/components/RiskPanel.tsx` — merchant chargeback review workflow.
+
+## Chargeback reference data
+
+`backend/data/chargeback-reason-codes.csv` has 64 rows for Visa, Mastercard, American Express, and Discover. Its schema is:
+
+`network`, `code`, `title`, `plain_english_meaning`, `response_deadline`, `key_evidence`, `winnability_label`, `source`.
+
+RiskRAG uses `network`, `code`/`title`, and `key_evidence` as local guidance. Semicolon-separated `key_evidence` values become review requirements. The first listed requirement is treated as critical by application policy. A transaction record containing matching order ID, transaction ID, and amount is also critical.
+
+The CSV does **not** contain labeled merchant cases. `winnability_label` is guidance attached to a reason code; it is not an observed outcome, ML label, win probability, or evidence. CSV text is never treated as merchant evidence. Networks and processors can change rules and deadlines, so the merchant must confirm current requirements.
+
+## Evidence checks
+
+A retrieved passage is linked to a case only when it comes from a selected document and contains the exact labeled order ID or transaction ID. Entirely unlinked passages are excluded. A passage linked by one correct ID but containing a different second ID is flagged.
+
+Supported explicit fields include:
+
+- `Order ID` and `Transaction ID`
+- `Amount` or `Total`
+- `Transaction date`, `Delivery date`, and `Refund date` in `YYYY-MM-DD`
+- `Delivery status`
+- `Refund status`
+
+RiskRAG detects mismatched IDs and amounts, inconsistent transaction dates, delivery after an expected date, delivery/refund before the transaction, invalid dates, delivery/refund status conflicts with the claim, and disagreements between sources. When sources disagree, both sides are excluded from requirement matching and drafting.
+
+A requirement receives a **candidate evidence match** when an affirmative local sentence has sufficient meaningful-token overlap. Sentences describing missing, pending, hypothetical, template, or required-but-absent evidence do not count. Candidate matching does not establish authenticity; every excerpt must be inspected by the merchant.
+
+## Explainable score and action policy
+
+Score:
+
+```text
+round(70 × requirement coverage
+    + 20 × all-critical-requirements-present
+    + 10 × identifier coverage)
+- 25 × detected contradictions
+```
+
+The result is clamped to 0–100. No linked evidence produces zero.
+
+Recommendation priority:
+
+1. A contradiction produces `MANUAL_REVIEW`.
+2. Missing critical evidence or no linked evidence produces `GATHER_MORE_EVIDENCE`.
+3. Score ≥ 85, every requirement present, both identifiers present, and an ML result of `SUFFICIENT_EVIDENCE` produces `AUTO_RESPOND`.
+4. Every other case produces `MANUAL_REVIEW`.
+
+Risk is HIGH when contradictions exist or score is below 50, LOW only when a draft is ready for review, and MEDIUM otherwise. This measures evidence readiness, not fraud probability or legal outcome.
+
+## ML methodology — synthetic demonstration
+
+Because the supplied reference has no labeled cases, `backend/ml/synthetic_demonstration.csv` contains 2,400 explicitly marked synthetic **feature-level** cases. It does not contain fake documents or real merchant records.
+
+Features are produced by the evidence analysis contract:
+
+- requirement coverage
+- critical-requirement coverage
+- linked-passage count
+- ID-conflict count
+- amount-conflict count
+- date-conflict count
+- status-conflict count
+- identifier coverage
+
+Labels are generated from latent completeness, critical-document availability, identity, conflict, and authenticity variables. Noise simulates extraction failures and missed conflicts. Authenticity is deliberately unobservable, preventing a perfect synthetic result. The label is not copied from the final score formula.
+
+Seed **42** creates fixed stratified splits:
+
+- Train: 1,440 cases
+- Validation: 480 cases
+- Held-out test: 480 cases
+
+Candidate models:
+
+- Logistic Regression, maximum 1,000 iterations
+- Random Forest, 100 trees, depth 6, minimum leaf size 5
+- XGBoost, 100 trees, depth 3, learning rate 0.05
+
+Each candidate is trained only on the train split. Thresholds 0.35, 0.50, 0.65, and 0.80 are compared on validation. Selection maximizes validation F1, then precision, then recall, with deterministic tie-breaking. The selected train-fitted model and threshold are frozen. The held-out test is then evaluated once; it is not used for tuning or refitting.
+
+## Actual evaluation results
+
+Validation selected **Logistic Regression at threshold 0.50**:
+
+- Logistic Regression: F1 **90.68%**, precision **91.45%**, recall **89.92%**
+- Random Forest: F1 **89.45%**, precision **89.83%**, recall **89.08%**
+- XGBoost: F1 **89.92%**, precision **89.92%**, recall **89.92%**
+
+Held-out synthetic test results:
+
+- Precision: **88.70%**
+- Recall: **86.44%**
+- F1: **87.55%**
+- Accuracy: **93.96%**
+- Confusion matrix: TN **349**, FP **13**, FN **16**, TP **102**
+- False-positive rate: **3.59%**
+- False-negative rate: **13.56%**
+- Default FP cost: **100 units**
+- Default FN cost: **25 units**
+- Total error cost: **1,700 units**
+- Cost per test case: **3.54 units**
+
+A false positive means insufficient evidence was predicted sufficient, so it receives the higher default cost. A false negative means sufficient evidence was predicted insufficient. Costs are illustrative user-defined units and do not represent expected chargeback values.
+
+The metrics evaluate the classifier, not the full recommendation policy. Rule-based review gates can further restrict `AUTO_RESPOND`.
+
+Machine-readable and human-readable reports:
+
+- `backend/ml/evaluation_report.json`
+- `backend/ml/evaluation_report.md`
+
+The reports also include every validation threshold result, split class counts, metric definitions, feature names, dataset SHA256, cost assumptions, and library versions.
+
+## Setup
+
+Requirements:
 
 - Python 3.11+
-- Node.js 18+
-- Free API keys (no credit card): [Groq](https://console.groq.com/keys) and
-  [Google AI Studio](https://aistudio.google.com/apikey)
+- Node.js 22.12+
+- Sufficient disk and memory for PDF, embedding, and reranking models
+- Network access during first dependency/model installation
 
-> **Free-tier quota note:** Groq's free tier is 100k tokens/day, shared across every request that
-> hits your key (manual use + eval runs). If you see `429` / rate-limit errors, the app
-> automatically falls back to Gemini for generation (`app/llm/fallback_client.py`) - no action
-> needed, just slightly different phrasing in answers. If you exhaust *both* keys, wait for the
-> daily reset or add a third provider (e.g. [NVIDIA NIM](https://build.nvidia.com), free tier,
-> OpenAI-compatible API - implementing a client for it is a ~30-line addition to `app/llm/`,
-> since every provider just implements the two-method `LLMClient` protocol in `app/llm/base.py`).
+Backend, from the repository root:
 
-## Quick start (no Docker)
-
-```bash
-# 1. Backend
+```powershell
 cd backend
 python -m venv .venv
-./.venv/Scripts/python -m pip install -e ".[dev]"   # Windows; use ./.venv/bin/python on macOS/Linux
-cp .env.example .env                                 # then fill in GROQ_API_KEY / GEMINI_API_KEY
-./.venv/Scripts/python -m uvicorn app.main:app --port 8000
+.\.venv\Scripts\python.exe -m pip install -e ".[dev]"
+Copy-Item .env.example .env
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
 
-# 2. Frontend (separate terminal)
+Frontend, in another terminal:
+
+```powershell
 cd frontend
-npm install
-cp .env.example .env      # default already points at localhost:8000
+npm ci
 npm run dev
 ```
 
-Open `http://localhost:5173`, upload a PDF from `corpus/`, wait for it to finish parsing (status
-badge flips to "Ready"), and ask a question. Click any citation chip to jump to and highlight the
-source region; use "Export Markdown" / "Export PDF" under an answer to save it, citations and all,
-as a standalone report you can share or attach elsewhere.
+Open `http://localhost:5173`. API documentation is at `http://localhost:8000/docs`.
 
-> **Windows note:** Docling's layout model attempts `torch.compile` on first run, which needs an
-> MSVC C++ toolchain most dev machines don't have. `TORCHDYNAMO_DISABLE=1` is already set inside
-> `app/data/parsing/docling_parser.py` and `app/main.py`, so this is handled for you — mentioned
-> here only so it's not a mystery if you see it in logs.
+Optional provider keys in `backend/.env` support query decomposition and evidence retrieval assistance. The chargeback risk draft itself is extractive and does not require an LLM key. Never put credentials in frontend code or merchant evidence files.
 
-## Quick start (Docker Compose)
+Docker:
 
-```bash
-cp backend/.env.example backend/.env   # fill in GROQ_API_KEY / GEMINI_API_KEY
+```powershell
+Copy-Item backend/.env.example backend/.env
 docker compose up --build
 ```
 
-Backend on `http://localhost:8000`, frontend on `http://localhost:5173`. Ingested documents
-persist in a named volume (`docintel_storage`) across restarts.
+## Reproduce metrics and run tests
 
-## Running the tests
-
-```bash
+```powershell
 cd backend
-./.venv/Scripts/python -m pytest
+.\.venv\Scripts\python.exe -m pip install -r ml/requirements-reproduce.txt
+.\.venv\Scripts\python.exe -m eval.run_eval --fp-cost 100 --fn-cost 25
+.\.venv\Scripts\python.exe -m pytest
 ```
 
-47 tests, one command, no API keys required (the integration test fakes the LLM call so it's
-fully reproducible offline — see `tests/integration/test_ingest_query_e2e.py`). The integration
-test does load the real Docling/embedding/reranker models, so the first run takes ~1-2 minutes;
-subsequent runs are faster once models are cached locally by `sentence-transformers`/`docling`.
-
-Run just the fast unit tests: `pytest tests/unit`.
-
-## Running the frontend tests
-
-```bash
+```powershell
 cd frontend
 npm test
+npm run build
 ```
 
-15 frontend tests covering the API client and AnswerMessage component (citation chips, groundedness
-bar, export buttons, row citations). No backend required.
+Verification completed for this implementation:
 
-## Running the evaluation
+- Backend: **61 passed**, including end-to-end PDF ingestion, retrieval, and citation tests
+- Frontend: **18 passed**
+- Frontend production build: passed
+- RiskRAG backend lint checks: passed
 
-```bash
-cd backend
-./.venv/Scripts/python -m eval.run_eval
+## API
+
+`GET /api/risk/reason-codes` returns supported network/reason-code guidance.
+
+`POST /api/risk/analyze` accepts:
+
+```json
+{
+  "network": "Visa",
+  "claim_type": "13.1",
+  "description": "Cardholder reports that the goods were not received.",
+  "order_id": "ORDER-123",
+  "transaction_id": "TXN-456",
+  "amount": "50.00",
+  "document_ids": ["selected-document-id"],
+  "transaction_date": null,
+  "expected_delivery_date": null,
+  "claimed_delivery_status": "not_delivered",
+  "claimed_refund_status": "unknown"
+}
 ```
 
-One command. It ingests `corpus/*.pdf` into a dedicated index (idempotent — skips files already
-ingested, so re-runs after the first are fast), runs the 27-question gold set
-(`backend/eval/gold_set.yaml`) through three retrieval configurations (naive dense-only baseline,
-hybrid+rerank, full pipeline), generates answers, and scores faithfulness/relevance with an
-independent Gemini judge. Writes `backend/eval/results.json` (machine-readable) and
-`backend/eval/report.md` (the human-readable results report — retrieval metrics, groundedness,
-refusal correctness, a "what the numbers changed" writeup, and a failure-case section).
+The response includes reference guidance, requirements, candidate evidence, missing and critical evidence, extracted fields, contradictions, analysis features, score explanation, ML prediction, risk, recommendation, grounded draft, citations, and `merchant_review_required: true`.
 
-Useful flags:
-- `--limit 5` — fast smoke run over the first 5 gold questions
-- `--skip-judge` — skip the Gemini LLM-judge pass (no `GEMINI_API_KEY` needed)
-- `--top-k 5` — retrieved-set size for Hit@k / page-recall (default 5)
+## Defense-only safety
 
-## Repo layout
+RiskRAG cannot create, alter, or authenticate evidence. It never invents missing facts. It cannot access payment rails or submit a chargeback response. It does not label a cardholder as fraudulent or make legal decisions. Contradictions trigger review; missing critical records trigger evidence gathering; every draft is explicitly marked for merchant approval.
 
-```
-backend/
-  app/
-    api/         FastAPI routes, Pydantic request/response contracts, trace-id middleware
-    services/    ingestion, chunking, generation, citation, export (Markdown/PDF) - business logic
-    retrieval/   hybrid search, RRF fusion, reranking, query decomposition, graph expansion
-    data/        Docling parser wrapper, SQLite + Chroma storage, internal data models
-    llm/         Groq + Gemini clients (typed, retried) + automatic fallback between them
-    core/        settings, structured logging with trace-id, typed error hierarchy
-  tests/         unit/ + integration/, 47 tests
-  eval/          gold set, metrics, LLM-judge, one-command harness, generated report
-frontend/
-  src/
-    api/         typed client + request/response contracts mirroring the backend schemas
-    components/  DocumentPanel, ChatPanel, AnswerMessage, PdfViewer (bbox-highlight citations)
-    hooks/       document upload + status-polling
-corpus/          sample PDFs + sourcing/licensing notes (see corpus/README.md)
-ADR.md           design doc: architecture, key trade-offs, cost & scale note
-```
+Do not use RiskRAG to fabricate documents, misrepresent a transaction, accuse a customer, evade financial controls, or automate an adverse decision. Use access control, tenant isolation, encryption, retention policies, audit logs, and independently labeled evaluations before production deployment with sensitive merchant data.
 
-## What's deliberately out of scope
+## Limitations
 
-Handwriting OCR, non-Latin scripts, heavily skewed/rotated scans, per-cell pixel-precise table
-bounding boxes (table citations highlight the table region and name the row/column in the answer
-text instead), and a durable ingestion task queue (background-task-based ingestion is fine at this
-scale; see ADR.md §9 for what changes at 10k documents). See `corpus/README.md` for exactly what
-the sample corpus does and doesn't exercise.
+- Published metrics are from synthetic feature-level cases and do not establish real-world performance.
+- Evidence matching can miss paraphrases, fields spread across chunks, unlabeled tables, handwriting, non-Latin text, skewed scans, and image details not captured by OCR.
+- A candidate match or high score does not prove authenticity, admissibility, rule compliance, or dispute success.
+- Multi-currency amounts, partial refunds, split shipments, subscriptions, and multi-item orders need manual reconciliation.
+- Document selection limits search scope but is not a tenant authorization system.
+- Network requirements and deadlines must be verified with the merchant's current processor documentation.

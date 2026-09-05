@@ -6,7 +6,7 @@ services:
     env_file:
       - backend/.env
     volumes:
-      - docintel_storage:/data/storage
+      - riskrag_storage:/data/storage
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
       interval: 15s
@@ -27,4 +27,5 @@ services:
       - backend
 
 volumes:
-  docintel_storage:
+  riskrag_storage:
+
