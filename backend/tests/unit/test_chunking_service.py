@@ -102,7 +102,7 @@ def test_section_path_breadcrumb_reflects_current_heading():
 def _build_doc_with_separated_caption() -> ParsedDocument:
     """Mirrors a real failure found in manual testing: Docling emits a
     table's caption as a separate TEXT block adjacent to the TABLE block,
-    not merged into it - e.g. the actual 'attention_is_all_you_need.pdf'
+    not merged into it, as can happen in a multi-page chargeback evidence file.
     Table 4 on page 10."""
     blocks = [
         _heading(1, "6 Results"),

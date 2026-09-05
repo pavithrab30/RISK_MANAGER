@@ -1,7 +1,7 @@
 [project]
-name = "docintel"
+name = "riskrag"
 version = "0.1.0"
-description = "Multimodal document intelligence: cross-page retrieval with region-level citations"
+description = "AI chargeback evidence verifier, risk scorer, and draft responder"
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.115.0",
@@ -22,6 +22,8 @@ dependencies = [
     "PyYAML>=6.0.2",
     "python-dotenv>=1.0.1",
     "reportlab>=4.2.0",
+    "scikit-learn>=1.5.0,<2.0.0",
+    "xgboost>=2.1.0,<4.0.0",
 ]
 
 [project.optional-dependencies]
@@ -36,6 +38,18 @@ dev = [
 asyncio_mode = "auto"
 testpaths = ["tests"]
 
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["app*", "eval*", "ml*", "data"]
+
+[tool.setuptools.package-data]
+ml = ["*.json", "*.csv", "*.md", "*.txt"]
+data = ["*.csv"]
+
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+

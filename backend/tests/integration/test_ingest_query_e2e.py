@@ -47,16 +47,16 @@ def _build_sample_pdf(path) -> str:
 
     doc = pymupdf.open()
     p1 = doc.new_page()
-    p1.insert_text((72, 72), "Widget Performance Report", fontsize=18)
-    p1.insert_text((72, 110), "1. Introduction", fontsize=14)
-    p1.insert_text((72, 140), "This report describes the performance of the widget system", fontsize=10)
-    p1.insert_text((72, 155), "under normal operating conditions across three test sites.", fontsize=10)
-    p1.insert_text((72, 185), "See Figure 1 and Table 1 for a summary of results.", fontsize=10)
+    p1.insert_text((72, 72), "Synthetic Chargeback Evidence Record", fontsize=18)
+    p1.insert_text((72, 110), "1. Order and payment", fontsize=14)
+    p1.insert_text((72, 140), "Order DEMO-ORDER-1001 was paid under transaction DEMO-TXN-9001", fontsize=10)
+    p1.insert_text((72, 155), "for INR 2499.00 on 2026-08-10.", fontsize=10)
+    p1.insert_text((72, 185), "This fixture is synthetic and must never be submitted as evidence.", fontsize=10)
 
     p2 = doc.new_page()
-    p2.insert_text((72, 72), "2. Results", fontsize=14)
-    p2.insert_text((72, 100), "Widget accuracy averaged 92 percent across all test sites,", fontsize=10)
-    p2.insert_text((72, 115), "with latency remaining under 15 milliseconds throughout.", fontsize=10)
+    p2.insert_text((72, 72), "2. Delivery record", fontsize=14)
+    p2.insert_text((72, 100), "Carrier tracking SYNTHETIC-TRACK-4411 records delivery", fontsize=10)
+    p2.insert_text((72, 115), "to the customer address on 2026-08-13.", fontsize=10)
 
     out = str(path / "sample.pdf")
     doc.save(out)
@@ -109,7 +109,7 @@ def ingested_document(pipeline_components):
     c = pipeline_components
     pdf_path = _build_sample_pdf(c["tmp_path"])
 
-    document = Document.new("widget_report.pdf", pdf_path)
+    document = Document.new("synthetic_chargeback_evidence.pdf", pdf_path)
     c["metadata_store"].create_document(document)
 
     parsed = c["parser"].parse(pdf_path)
@@ -156,7 +156,7 @@ def test_query_retrieves_and_generates_grounded_answer_with_citations(
     c = pipeline_components
 
     result = c["retrieval_pipeline"].retrieve(
-        "What does the report say about widget accuracy?", document_ids=[document.id]
+        "What delivery evidence exists for DEMO-ORDER-1001?", document_ids=[document.id]
     )
     assert len(result.chunks) >= 1
     for rc in result.chunks:
@@ -164,7 +164,7 @@ def test_query_retrieves_and_generates_grounded_answer_with_citations(
         assert rc.rerank_score is not None
 
     generation = c["generation_service"].generate(
-        "What does the report say about widget accuracy?", result.chunks, {document.id: document}
+        "What delivery evidence exists for DEMO-ORDER-1001?", result.chunks, {document.id: document}
     )
     assert generation.refused is False
     assert len(generation.citations) >= 1
@@ -179,6 +179,6 @@ def test_query_retrieves_and_generates_grounded_answer_with_citations(
 def test_query_restricted_to_unrelated_document_id_finds_nothing(pipeline_components, ingested_document):
     c = pipeline_components
     result = c["retrieval_pipeline"].retrieve(
-        "What does the report say about widget accuracy?", document_ids=["doc_does_not_exist"]
+        "What delivery evidence exists for DEMO-ORDER-1001?", document_ids=["doc_does_not_exist"]
     )
     assert result.chunks == []

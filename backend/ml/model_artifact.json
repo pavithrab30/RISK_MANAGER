@@ -1,0 +1,28 @@
+{
+  "selected_model": "logistic_regression",
+  "model_type": "logistic_regression",
+  "feature_names": [
+    "coverage",
+    "critical_coverage",
+    "matched_chunks",
+    "id_conflicts",
+    "amount_conflicts",
+    "date_conflicts",
+    "status_conflicts",
+    "identity_coverage"
+  ],
+  "threshold": 0.5,
+  "synthetic_demonstration": true,
+  "seed": 42,
+  "coefficients": [
+    5.119944970485131,
+    2.8455577806398913,
+    -0.049030918848676164,
+    -3.7634551651388195,
+    -3.723027404192548,
+    -3.7941016654420636,
+    -3.1072526109596224,
+    6.252561642468833
+  ],
+  "intercept": -11.680306967437346
+}

@@ -1,0 +1,471 @@
+{
+  "dataset": "SYNTHETIC DEMONSTRATION \u2014 feature simulation, not real merchant cases",
+  "positive_class": "SUFFICIENT_EVIDENCE",
+  "seed": 42,
+  "split_sizes": {
+    "train": 1440,
+    "validation": 480,
+    "held_out_test": 480
+  },
+  "split_positive_counts": {
+    "train": 355,
+    "validation": 119,
+    "held_out_test": 118
+  },
+  "selection_rule": "Maximum validation F1, then precision, then recall, then lexical model name; fixed threshold grid. No test tuning or refit.",
+  "features": [
+    "coverage",
+    "critical_coverage",
+    "matched_chunks",
+    "id_conflicts",
+    "amount_conflicts",
+    "date_conflicts",
+    "status_conflicts",
+    "identity_coverage"
+  ],
+  "selected_model": "logistic_regression",
+  "selected_threshold": 0.5,
+  "validation": {
+    "logistic_regression": {
+      "parameters": {
+        "C": 1.0,
+        "class_weight": null,
+        "dual": false,
+        "fit_intercept": true,
+        "intercept_scaling": 1,
+        "l1_ratio": null,
+        "max_iter": 1000,
+        "multi_class": "deprecated",
+        "n_jobs": null,
+        "penalty": "l2",
+        "random_state": 42,
+        "solver": "lbfgs",
+        "tol": 0.0001,
+        "verbose": 0,
+        "warm_start": false
+      },
+      "threshold_trials": [
+        {
+          "threshold": 0.35,
+          "precision": 0.7916666666666666,
+          "recall": 0.957983193277311,
+          "f1": 0.8669201520912547,
+          "accuracy": 0.9270833333333334,
+          "confusion_matrix": [
+            [
+              331,
+              30
+            ],
+            [
+              5,
+              114
+            ]
+          ],
+          "false_positive_rate": 0.08310249307479224,
+          "false_negative_rate": 0.04201680672268908,
+          "financial_cost": 3125.0,
+          "cost_per_case": 6.510416666666667
+        },
+        {
+          "threshold": 0.5,
+          "precision": 0.9145299145299145,
+          "recall": 0.8991596638655462,
+          "f1": 0.9067796610169492,
+          "accuracy": 0.9541666666666667,
+          "confusion_matrix": [
+            [
+              351,
+              10
+            ],
+            [
+              12,
+              107
+            ]
+          ],
+          "false_positive_rate": 0.027700831024930747,
+          "false_negative_rate": 0.10084033613445378,
+          "financial_cost": 1300.0,
+          "cost_per_case": 2.7083333333333335
+        },
+        {
+          "threshold": 0.65,
+          "precision": 0.9438202247191011,
+          "recall": 0.7058823529411765,
+          "f1": 0.8076923076923077,
+          "accuracy": 0.9166666666666666,
+          "confusion_matrix": [
+            [
+              356,
+              5
+            ],
+            [
+              35,
+              84
+            ]
+          ],
+          "false_positive_rate": 0.013850415512465374,
+          "false_negative_rate": 0.29411764705882354,
+          "financial_cost": 1375.0,
+          "cost_per_case": 2.8645833333333335
+        },
+        {
+          "threshold": 0.8,
+          "precision": 0.9666666666666667,
+          "recall": 0.48739495798319327,
+          "f1": 0.6480446927374302,
+          "accuracy": 0.86875,
+          "confusion_matrix": [
+            [
+              359,
+              2
+            ],
+            [
+              61,
+              58
+            ]
+          ],
+          "false_positive_rate": 0.00554016620498615,
+          "false_negative_rate": 0.5126050420168067,
+          "financial_cost": 1725.0,
+          "cost_per_case": 3.59375
+        }
+      ],
+      "best": {
+        "threshold": 0.5,
+        "precision": 0.9145299145299145,
+        "recall": 0.8991596638655462,
+        "f1": 0.9067796610169492,
+        "accuracy": 0.9541666666666667,
+        "confusion_matrix": [
+          [
+            351,
+            10
+          ],
+          [
+            12,
+            107
+          ]
+        ],
+        "false_positive_rate": 0.027700831024930747,
+        "false_negative_rate": 0.10084033613445378,
+        "financial_cost": 1300.0,
+        "cost_per_case": 2.7083333333333335
+      }
+    },
+    "random_forest": {
+      "parameters": {
+        "bootstrap": true,
+        "ccp_alpha": 0.0,
+        "class_weight": null,
+        "criterion": "gini",
+        "max_depth": 6,
+        "max_features": "sqrt",
+        "max_leaf_nodes": null,
+        "max_samples": null,
+        "min_impurity_decrease": 0.0,
+        "min_samples_leaf": 5,
+        "min_samples_split": 2,
+        "min_weight_fraction_leaf": 0.0,
+        "monotonic_cst": null,
+        "n_estimators": 100,
+        "n_jobs": 1,
+        "oob_score": false,
+        "random_state": 42,
+        "verbose": 0,
+        "warm_start": false
+      },
+      "threshold_trials": [
+        {
+          "threshold": 0.35,
+          "precision": 0.872,
+          "recall": 0.9159663865546218,
+          "f1": 0.8934426229508197,
+          "accuracy": 0.9458333333333333,
+          "confusion_matrix": [
+            [
+              345,
+              16
+            ],
+            [
+              10,
+              109
+            ]
+          ],
+          "false_positive_rate": 0.0443213296398892,
+          "false_negative_rate": 0.08403361344537816,
+          "financial_cost": 1850.0,
+          "cost_per_case": 3.8541666666666665
+        },
+        {
+          "threshold": 0.5,
+          "precision": 0.8983050847457628,
+          "recall": 0.8907563025210085,
+          "f1": 0.8945147679324894,
+          "accuracy": 0.9479166666666666,
+          "confusion_matrix": [
+            [
+              349,
+              12
+            ],
+            [
+              13,
+              106
+            ]
+          ],
+          "false_positive_rate": 0.0332409972299169,
+          "false_negative_rate": 0.1092436974789916,
+          "financial_cost": 1525.0,
+          "cost_per_case": 3.1770833333333335
+        },
+        {
+          "threshold": 0.65,
+          "precision": 0.9142857142857143,
+          "recall": 0.8067226890756303,
+          "f1": 0.8571428571428571,
+          "accuracy": 0.9333333333333333,
+          "confusion_matrix": [
+            [
+              352,
+              9
+            ],
+            [
+              23,
+              96
+            ]
+          ],
+          "false_positive_rate": 0.024930747922437674,
+          "false_negative_rate": 0.19327731092436976,
+          "financial_cost": 1475.0,
+          "cost_per_case": 3.0729166666666665
+        },
+        {
+          "threshold": 0.8,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "accuracy": 0.7520833333333333,
+          "confusion_matrix": [
+            [
+              361,
+              0
+            ],
+            [
+              119,
+              0
+            ]
+          ],
+          "false_positive_rate": 0.0,
+          "false_negative_rate": 1.0,
+          "financial_cost": 2975.0,
+          "cost_per_case": 6.197916666666667
+        }
+      ],
+      "best": {
+        "threshold": 0.5,
+        "precision": 0.8983050847457628,
+        "recall": 0.8907563025210085,
+        "f1": 0.8945147679324894,
+        "accuracy": 0.9479166666666666,
+        "confusion_matrix": [
+          [
+            349,
+            12
+          ],
+          [
+            13,
+            106
+          ]
+        ],
+        "false_positive_rate": 0.0332409972299169,
+        "false_negative_rate": 0.1092436974789916,
+        "financial_cost": 1525.0,
+        "cost_per_case": 3.1770833333333335
+      }
+    },
+    "xgboost": {
+      "parameters": {
+        "objective": "binary:logistic",
+        "base_score": null,
+        "booster": null,
+        "callbacks": null,
+        "colsample_bylevel": null,
+        "colsample_bynode": null,
+        "colsample_bytree": 1,
+        "device": null,
+        "early_stopping_rounds": null,
+        "enable_categorical": true,
+        "eval_metric": "logloss",
+        "feature_types": null,
+        "feature_weights": null,
+        "gamma": null,
+        "grow_policy": null,
+        "importance_type": null,
+        "interaction_constraints": null,
+        "learning_rate": 0.05,
+        "max_bin": null,
+        "max_cat_threshold": null,
+        "max_cat_to_onehot": null,
+        "max_delta_step": null,
+        "max_depth": 3,
+        "max_leaves": null,
+        "min_child_weight": null,
+        "missing": NaN,
+        "monotone_constraints": null,
+        "multi_strategy": null,
+        "n_estimators": 100,
+        "n_jobs": 1,
+        "num_parallel_tree": null,
+        "random_state": 42,
+        "reg_alpha": null,
+        "reg_lambda": null,
+        "sampling_method": null,
+        "scale_pos_weight": null,
+        "subsample": 1,
+        "tree_method": null,
+        "validate_parameters": null,
+        "verbosity": null
+      },
+      "threshold_trials": [
+        {
+          "threshold": 0.35,
+          "precision": 0.8461538461538461,
+          "recall": 0.9243697478991597,
+          "f1": 0.8835341365461847,
+          "accuracy": 0.9395833333333333,
+          "confusion_matrix": [
+            [
+              341,
+              20
+            ],
+            [
+              9,
+              110
+            ]
+          ],
+          "false_positive_rate": 0.055401662049861494,
+          "false_negative_rate": 0.07563025210084033,
+          "financial_cost": 2225.0,
+          "cost_per_case": 4.635416666666667
+        },
+        {
+          "threshold": 0.5,
+          "precision": 0.872,
+          "recall": 0.9159663865546218,
+          "f1": 0.8934426229508197,
+          "accuracy": 0.9458333333333333,
+          "confusion_matrix": [
+            [
+              345,
+              16
+            ],
+            [
+              10,
+              109
+            ]
+          ],
+          "false_positive_rate": 0.0443213296398892,
+          "false_negative_rate": 0.08403361344537816,
+          "financial_cost": 1850.0,
+          "cost_per_case": 3.8541666666666665
+        },
+        {
+          "threshold": 0.65,
+          "precision": 0.8991596638655462,
+          "recall": 0.8991596638655462,
+          "f1": 0.8991596638655462,
+          "accuracy": 0.95,
+          "confusion_matrix": [
+            [
+              349,
+              12
+            ],
+            [
+              12,
+              107
+            ]
+          ],
+          "false_positive_rate": 0.0332409972299169,
+          "false_negative_rate": 0.10084033613445378,
+          "financial_cost": 1500.0,
+          "cost_per_case": 3.125
+        },
+        {
+          "threshold": 0.8,
+          "precision": 0.9506172839506173,
+          "recall": 0.6470588235294118,
+          "f1": 0.77,
+          "accuracy": 0.9041666666666667,
+          "confusion_matrix": [
+            [
+              357,
+              4
+            ],
+            [
+              42,
+              77
+            ]
+          ],
+          "false_positive_rate": 0.0110803324099723,
+          "false_negative_rate": 0.35294117647058826,
+          "financial_cost": 1450.0,
+          "cost_per_case": 3.0208333333333335
+        }
+      ],
+      "best": {
+        "threshold": 0.65,
+        "precision": 0.8991596638655462,
+        "recall": 0.8991596638655462,
+        "f1": 0.8991596638655462,
+        "accuracy": 0.95,
+        "confusion_matrix": [
+          [
+            349,
+            12
+          ],
+          [
+            12,
+            107
+          ]
+        ],
+        "false_positive_rate": 0.0332409972299169,
+        "false_negative_rate": 0.10084033613445378,
+        "financial_cost": 1500.0,
+        "cost_per_case": 3.125
+      }
+    }
+  },
+  "held_out_test": {
+    "precision": 0.8869565217391304,
+    "recall": 0.864406779661017,
+    "f1": 0.8755364806866953,
+    "accuracy": 0.9395833333333333,
+    "confusion_matrix": [
+      [
+        349,
+        13
+      ],
+      [
+        16,
+        102
+      ]
+    ],
+    "false_positive_rate": 0.03591160220994475,
+    "false_negative_rate": 0.13559322033898305,
+    "financial_cost": 1700.0,
+    "cost_per_case": 3.5416666666666665
+  },
+  "cost_assumptions": {
+    "false_positive": 100.0,
+    "false_negative": 25.0,
+    "currency": "user-defined units"
+  },
+  "confusion_matrix_order": "Rows actual [INSUFFICIENT, SUFFICIENT]; columns predicted [INSUFFICIENT, SUFFICIENT]",
+  "versions": {
+    "python": "3.12.14",
+    "numpy": "2.2.6",
+    "sklearn": "1.7.2",
+    "xgboost": "3.4.1"
+  },
+  "limitations": "Simulated completeness/reliability labels with noisy extraction. No real-world precision, recall, fraud determination, or chargeback win-rate claim. Authenticity is unobservable. Repeated runs reproduce this demonstration, not independent test sets.",
+  "dataset_sha256": "90a5ed1a3e12f8c0050d3571cee53c6fbb9b279461aa766c48b6d245371af2a5"
+}
