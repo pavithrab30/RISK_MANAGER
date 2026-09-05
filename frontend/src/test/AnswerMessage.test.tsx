@@ -25,17 +25,17 @@ vi.mock('../api/client', () => ({
 const makeCitation = (overrides: Partial<Citation> = {}): Citation => ({
   chunk_id: 'chunk_1',
   document_id: 'doc_1',
-  document_name: 'paper.pdf',
+  document_name: 'delivery-evidence.pdf',
   page_number: 3,
   bbox: { x0: 0.1, y0: 0.2, x1: 0.9, y1: 0.4 },
-  snippet: 'The transformer model uses attention.',
+  snippet: 'Carrier tracking records delivery on 2026-08-13.',
   row_number: null,
   ...overrides,
 });
 
 const makeResponse = (overrides: Partial<QueryResponse> = {}): QueryResponse => ({
   trace_id: 'trace-abc',
-  answer: 'The answer is 42.',
+  answer: 'The evidence records delivery on 2026-08-13.',
   citations: [],
   refused: false,
   refusal_reason: null,
@@ -49,12 +49,12 @@ describe('AnswerMessage', () => {
   it('renders the answer text', () => {
     render(
       <AnswerMessage
-        question="What is the answer?"
-        response={makeResponse({ answer: 'The answer is 42.' })}
+        question="Was the order delivered?"
+        response={makeResponse({ answer: 'The evidence records delivery on 2026-08-13.' })}
         onOpenCitation={vi.fn()}
       />
     );
-    expect(screen.getByText('The answer is 42.')).toBeInTheDocument();
+    expect(screen.getByText('The evidence records delivery on 2026-08-13.')).toBeInTheDocument();
   });
 
   it('shows groundedness percentage for non-refused answers', () => {
@@ -80,7 +80,7 @@ describe('AnswerMessage', () => {
   });
 
   it('renders citation chips with document name and page', () => {
-    const citation = makeCitation({ document_name: 'paper.pdf', page_number: 5, row_number: null });
+    const citation = makeCitation({ document_name: 'delivery-evidence.pdf', page_number: 5, row_number: null });
     render(
       <AnswerMessage
         question="Q"
@@ -88,7 +88,7 @@ describe('AnswerMessage', () => {
         onOpenCitation={vi.fn()}
       />
     );
-    expect(screen.getByRole('button', { name: /paper\.pdf.*p\.5/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /delivery-evidence\.pdf.*p\.5/i })).toBeInTheDocument();
   });
 
   it('renders row number in citation chip when present', () => {
@@ -114,7 +114,7 @@ describe('AnswerMessage', () => {
         onOpenCitation={onOpenCitation}
       />
     );
-    await user.click(screen.getByRole('button', { name: /paper\.pdf/i }));
+    await user.click(screen.getByRole('button', { name: /delivery-evidence\.pdf/i }));
     expect(onOpenCitation).toHaveBeenCalledWith(citation);
   });
 

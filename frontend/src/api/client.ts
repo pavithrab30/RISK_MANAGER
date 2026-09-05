@@ -1,4 +1,15 @@
 import type { ApiError, DocumentSummary, ExportRequest, QueryResponse } from "./types";
+import type { ReasonCode, RiskResult } from "./types";
+
+export function listReasonCodes(): Promise<ReasonCode[]> {
+  return request<ReasonCode[]>("/api/risk/reason-codes");
+}
+
+export function analyzeChargeback(payload: Record<string, unknown>): Promise<RiskResult> {
+  return request<RiskResult>("/api/risk/analyze", {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
+  });
+}
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
@@ -22,6 +33,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       details: {},
       trace_id: "-",
     }))) as ApiError;
+    if (!payload.message) {
+      const detail = (payload as unknown as { detail?: unknown }).detail;
+      payload.message = typeof detail === "string" ? detail : `Request rejected (${res.status}). Check the case fields and document selection.`;
+    }
     throw new ApiRequestError(res.status, payload);
   }
   return res.json() as Promise<T>;
@@ -88,9 +103,10 @@ async function downloadExport(path: string, payload: ExportRequest, filename: st
 }
 
 export function exportMarkdown(payload: ExportRequest): Promise<void> {
-  return downloadExport("/api/export/markdown", payload, "docintel-answer.md");
+  return downloadExport("/api/export/markdown", payload, "riskrag-evidence.md");
 }
 
 export function exportPdf(payload: ExportRequest): Promise<void> {
-  return downloadExport("/api/export/pdf", payload, "docintel-answer.pdf");
+  return downloadExport("/api/export/pdf", payload, "riskrag-evidence.pdf");
 }
+

@@ -69,3 +69,15 @@ export interface ApiError {
   details: Record<string, unknown>;
   trace_id: string;
 }
+export interface ReasonCode { network: string; code: string; title: string; }
+export interface RiskRequirement { id: string; description: string; critical: boolean; matches: string[]; }
+export interface RiskResult {
+  evidence_score: number; risk_level: string; recommendation: string;
+  explanation: string[]; requirements: RiskRequirement[];
+  missing_evidence: RiskRequirement[]; critical_missing_evidence: RiskRequirement[];
+  contradictions: { kind: string; message: string; chunk_id: string }[];
+  evidence: (Omit<Citation, "document_name"> & { usable: boolean })[];
+  ml_prediction: { label: string; model: string; probability_sufficient: number; threshold: number; disclaimer: string };
+  merchant_review_required: boolean; draft_response: string;
+  reference: ReasonCode & { source: string };
+}

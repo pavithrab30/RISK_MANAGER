@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useDocuments } from "./hooks/useDocuments";
 import { DocumentPanel } from "./components/DocumentPanel";
-import { ChatPanel } from "./components/ChatPanel";
+import { RiskPanel } from "./components/RiskPanel";
 import { PdfViewer } from "./components/PdfViewer";
 import type { Citation } from "./api/types";
 
@@ -46,8 +46,8 @@ export default function App() {
   return (
     <div className="app">
       <header className="app__header">
-        <h1>⬡ DocIntel</h1>
-        <span className="app__tagline">Multimodal document intelligence with region-level citations</span>
+        <h1>RiskRAG</h1>
+        <span className="app__tagline">AI Risk Manager · Chargeback evidence</span>
       </header>
       <div className={`app__body ${viewer ? "app__body--with-viewer" : ""}`}>
         <DocumentPanel
@@ -58,11 +58,7 @@ export default function App() {
           onToggleSelect={toggleSelect}
           onViewDocument={viewDocument}
         />
-        <ChatPanel
-          documentIds={[...selectedIds]}
-          onOpenCitation={openCitation}
-          disabled={readyDocuments.length === 0}
-        />
+        <RiskPanel key={[...selectedIds].join(",")} documentIds={[...selectedIds].filter(id => readyDocuments.some(d => d.id === id))} onOpenCitation={openCitation} />
         {viewer && (
           <div className="viewer-pane">
             <div className="viewer-pane__header">
